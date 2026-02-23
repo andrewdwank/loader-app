@@ -33,12 +33,23 @@ button { border:none; border-radius:3px; padding:6px 10px; font-size:12px; font-
 .p-btn { background:#ffcc00; color:#000; }
 .f-btn { background:#e0e0e0; color:#333; }
 
-.done .btn-grp { display:none; }
+.done .btn-grp button:not(.p-btn):not(.f-btn) {
+    display: inline-block;
+    background: #ff4444; /* Optional: make it red so it's clear it's an undo */
+    color: white;
+}
 
 .btn-main { background:#007bff; color:white; width:100%; padding:12px; margin-top:10px; border-radius:5px; }
 .reset-link { color:red; display:block; text-align:center; margin-top:20px; font-size:12px; text-decoration:none; }
 
 .hidden { display:none; }
+
+button {
+    background:#ddd;
+}
+button:hover {
+    opacity:0.8;
+}
 </style>
 </head>
 <body>
@@ -106,8 +117,11 @@ async function generateList() {
 
 
 async function markFull(id) {
+    let itm = items.find(i => i.id === id);
 
-    let itm = items.find(i=>i.id===id);
+    // Capture current state before changing
+    itm.prev_rem = itm.rem;
+    itm.prev_status = itm.status;
 
     itm.rem = 0;
     itm.status = 'd';
@@ -121,10 +135,12 @@ async function markPart(id) {
     let itm = items.find(i=>i.id===id);
 
     let loaded = prompt(`Loaded how many? (Left: ${itm.rem})`);
-
     loaded = parseInt(loaded);
 
     if(!isNaN(loaded) && loaded > 0){
+
+        itm.prev_rem = itm.rem;
+        itm.prev_status = itm.status;
 
         itm.rem -= loaded;
 
@@ -135,6 +151,21 @@ async function markPart(id) {
 
         await saveAndRender();
     }
+}
+
+async function undoItem(id) {
+
+    let itm = items.find(i => i.id === id);
+
+    if (itm.prev_rem == null || itm.prev_status == null) return;
+
+    itm.rem = itm.prev_rem;
+    itm.status = itm.prev_status;
+
+    itm.prev_rem = null;
+    itm.prev_status = null;
+
+    await saveAndRender();
 }
 
 
@@ -148,7 +179,9 @@ async function saveAndRender() {
                 name: i.name,
                 total: i.total,
                 rem: i.rem,
-                status: i.status
+                status: i.status,
+                prev_rem: i.prev_rem,
+                prev_status: i.prev_status
             }))
         );
 
@@ -210,11 +243,18 @@ function render() {
         div.innerHTML = `
             <div class="qty">${qtyDisplay}</div>
             <div class="name">${item.name}</div>
-            ${role==='loader'?`
+            ${role === 'loader' ? `
             <div class="btn-grp">
-                <button class="p-btn" onclick="markPart(${item.id})">Part</button>
-                <button class="f-btn" onclick="markFull(${item.id})">Full</button>
-            </div>`:''}
+                ${item.status !== 'd' ? `
+                    <button class="p-btn" onclick="markPart(${item.id})">Part</button>
+                    <button class="f-btn" onclick="markFull(${item.id})">Full</button>
+                ` : ''}
+                
+                ${(item.prev_rem !== undefined && item.prev_rem !== null) ? 
+                    `<button onclick="undoItem(${item.id})">Undo</button>` 
+                    : ''
+                }
+            </div>` : ''}
         `;
 
         container.appendChild(div);
@@ -261,8 +301,10 @@ async function loadFromSupabase() {
         name:d.name,
         total:d.total,
         rem:d.rem,
-        status:d.status
-    }));
+        status:d.status,
+        prev_rem:d.prev_rem,
+        prev_status:d.prev_status
+    }));    
 
     render();
 }
