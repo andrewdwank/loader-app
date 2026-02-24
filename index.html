@@ -10,7 +10,7 @@
 
 <style>
 body { font-family: -apple-system, sans-serif; background: #fff; padding: 10px; margin: 0; color: #333; }
-#setup-area, #app-area { margin: 0 auto; max-width: 400px; padding: 10px; }
+#role-area, #setup-area, #app-area { margin: 0 auto; max-width: 400px; padding: 10px; }
 textarea { width: 100%; height: 120px; border: 1px solid #ccc; border-radius: 4px; padding: 5px; box-sizing: border-box; }
 
 #progress-container { position: sticky; top:0; background:white; padding:10px 0; border-bottom:1px solid #eee; z-index:10; }
@@ -53,12 +53,17 @@ button:hover {
 </style>
 </head>
 <body>
+    <div id="role-area">
+        <h3>Select Role</h3>
+        <button onclick="setRole('loader')" class="btn-main">Loader</button>
+        <button onclick="setRole('boss')" class="btn-main" style="background:#555;">Boss</button>
+    </div>
 
-<div id="setup-area">
-<h3>Paste List Below</h3>
-<textarea id="list-input" placeholder="100 Lemper Ayam&#10;200 Tahu Isi..."></textarea>
-<button class="btn-main">Start Loading</button>
-</div>
+    <div id="setup-area" class="hidden">
+        <h3>Paste List Below</h3>
+        <textarea id="list-input" placeholder="100 Lemper Ayam&#10;200 Tahu Isi..."></textarea>
+        <button class="btn-main">Start Loading</button>
+    </div>
 
 <div id="app-area" class="hidden">
 
@@ -86,10 +91,24 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let items = [];
 
 // ===== Role =====
-const role = (prompt("Enter role: loader / boss") || "").toLowerCase();
-
+let role = null;
 
 // ===== Functions =====
+
+function setRole(r) {
+    role = r;
+
+    document.getElementById('role-area').classList.add('hidden');
+
+    // If items already exist → show app
+    if (items.length > 0) {
+        document.getElementById('app-area').classList.remove('hidden');
+    } else {
+        document.getElementById('setup-area').classList.remove('hidden');
+    }
+
+    render();
+}
 
 async function generateList() {
 
@@ -193,6 +212,7 @@ async function saveAndRender() {
 
 function render() {
 
+    if (!role) return;
     const container = document.getElementById('list-container');
     const setup = document.getElementById('setup-area');
     const app = document.getElementById('app-area');
