@@ -62,7 +62,7 @@ button:hover {
     <div id="setup-area" class="hidden">
         <h3>Paste List Below</h3>
         <textarea id="list-input" placeholder="100 Lemper Ayam&#10;200 Tahu Isi..."></textarea>
-        <button class="btn-main">Start Loading</button>
+        <button id=start-btn class="btn-main">Start Loading</button>
     </div>
 
 <div id="app-area" class="hidden">
@@ -334,7 +334,7 @@ async function loadFromSupabase() {
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    document.querySelector('.btn-main')
+    document.getElementById('start-btn')
         .addEventListener('click', generateList);
 
     document.querySelector('.reset-link')
